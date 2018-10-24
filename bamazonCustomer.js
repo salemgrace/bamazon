@@ -35,22 +35,65 @@ function displayProducts() {
         });
 }
 
+var productToPurchase = '';
+
+var amountToPurchase = 0;
+
 function selectProduct() {
     inquirer
         .prompt([{
-                name: "product",
-                type: "input",
-                message: "What is the ID number of the product you would like to buy?"
-            },
-            {
-                name: "amount",
-                type: "input",
-                message: "How many units do you want to buy?"
-            }
-        ])
+            name: "product",
+            type: "input",
+            message: "What is the ID number of the product you would like to buy?"
+        }])
         .then(function (answer) {
-            console.log("You have selected the product with the ID of '" + answer.product + 
-            "'.\nAnd you would like to purchase '" + answer.amount + "' units.");
+            var query = "SELECT * FROM products WHERE ?";
+            connection.query(query, {
+                item_id: answer.product
+            }, function (err, res) {
+                console.log("Product selected: " + res[0].product_name + "\n");
+                selectAmount();
+                productToPurchase = res[0].product_name;
+                return productToPurchase;
+            });
         });
-    connection.end()
+}
+
+function selectAmount() {
+    inquirer
+        .prompt([{
+            name: "amount",
+            type: "input",
+            message: "How many do you want to buy?"
+        }])
+        .then(function (answer) {
+            var query = "SELECT * FROM products WHERE ?";
+            connection.query(query, {
+                product_name: productToPurchase
+            }, function (err, res) {
+                console.log("You have selected to purchase: " + answer.amount + " " + res[0].product_name + "s. Let us check our inventory...");
+                amountToPurchase = answer.amount;
+                console.log("There are " + res[0].stock_quantity + " products left.");
+                if (res[0].stock_quantity >= answer.amount) {
+                purchaseAmount();
+                return amountToPurchase;
+                } else {
+                console.log("Sorry, there are not enough left in stock. Try again.");
+                connection.end();
+                }
+            })
+        });
+}
+
+function purchaseAmount() {
+    var query = connection.query(
+        "SELECT * FROM ?",
+        {
+            product_name: productToPurchase
+        },
+        function(err, res) {
+            console.log("Hurray! You can purchase " + amountToPurchase + " " + productToPurchase + "s.");   
+            connection.end();     
+        }
+    )
 }
