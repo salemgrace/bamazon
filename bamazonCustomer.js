@@ -41,6 +41,8 @@ var amountToPurchase;
 
 var newProductAmount;
 
+var currentCost;
+
 function selectProduct() {
     inquirer
         .prompt([{
@@ -73,15 +75,17 @@ function selectAmount() {
             connection.query(query, {
                 product_name: productToPurchase
             }, function (err, res) {
+                console.log("--------------------------------");
                 console.log("You have selected to purchase: " + answer.amount + " " + res[0].product_name + "s. Let us check our inventory...");
                 amountToPurchase = answer.amount;
                 newProductAmount = res[0].stock_quantity - amountToPurchase;
-                console.log("There are " + res[0].stock_quantity + " products left.");
+                currentCost = res[0].price * amountToPurchase;
                 if (res[0].stock_quantity >= answer.amount) {
                     purchaseAmount();
-                    return amountToPurchase, newProductAmount;
+                    return amountToPurchase, newProductAmount, currentCost;
                 } else {
-                    console.log("Sorry, there are not enough left in stock. Try again.");
+                    console.log("--------------------------------");
+                    console.log("Sorry, there are not enough left in stock.");
                     connection.end();
                 }
             })
@@ -97,9 +101,10 @@ function purchaseAmount() {
             product_name: productToPurchase
         }
     ], function (err, res) {
-        console.log("Hurray! You have purchased " + amountToPurchase + " " + productToPurchase + "s.");
-        console.log("Now there are '" + newProductAmount + "' " + productToPurchase +
-            "s left in stock.");
+        console.log("--------------------------------");
+        console.log("There are enough left in stock!");
+        console.log("And your cost for " + amountToPurchase + " " + productToPurchase + "s is: $" + currentCost + ".");
+        console.log("--------------------------------");
         whatNext();
     })
 }
@@ -116,6 +121,7 @@ function whatNext() {
         if (answer.next){
             displayProducts();
         } else {
+            console.log("--------------------------------");
             console.log("Come back again soon!");
             connection.end();
         }
